@@ -1,1 +1,83 @@
-{"nbformat":4,"nbformat_minor":0,"metadata":{"colab":{"provenance":[],"authorship_tag":"ABX9TyNmNM9Sf2Qd7ZvjxkbFN9ns"},"kernelspec":{"name":"python3","display_name":"Python 3"},"language_info":{"name":"python"}},"cells":[{"cell_type":"code","execution_count":2,"metadata":{"colab":{"base_uri":"https://localhost:8080/","height":395},"id":"JqOYyeLyaBMQ","executionInfo":{"status":"error","timestamp":1746029207462,"user_tz":-330,"elapsed":78,"user":{"displayName":"DEVANSH GOYAL","userId":"11301807296047161807"}},"outputId":"d5437436-05a1-4209-d847-78f985c507f9"},"outputs":[{"output_type":"error","ename":"ModuleNotFoundError","evalue":"No module named 'streamlit'","traceback":["\u001b[0;31m---------------------------------------------------------------------------\u001b[0m","\u001b[0;31mModuleNotFoundError\u001b[0m                       Traceback (most recent call last)","\u001b[0;32m<ipython-input-2-1b69992dd26c>\u001b[0m in \u001b[0;36m<cell line: 0>\u001b[0;34m()\u001b[0m\n\u001b[0;32m----> 1\u001b[0;31m \u001b[0;32mimport\u001b[0m \u001b[0mstreamlit\u001b[0m \u001b[0;32mas\u001b[0m \u001b[0mst\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m      2\u001b[0m \u001b[0;32mimport\u001b[0m \u001b[0mnumpy\u001b[0m \u001b[0;32mas\u001b[0m \u001b[0mnp\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      3\u001b[0m \u001b[0;32mimport\u001b[0m \u001b[0mpickle\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      4\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      5\u001b[0m \u001b[0;31m# Load the saved model\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n","\u001b[0;31mModuleNotFoundError\u001b[0m: No module named 'streamlit'","","\u001b[0;31m---------------------------------------------------------------------------\u001b[0;32m\nNOTE: If your import is failing due to a missing package, you can\nmanually install dependencies using either !pip or !apt.\n\nTo view examples of installing some common dependencies, click the\n\"Open Examples\" button below.\n\u001b[0;31m---------------------------------------------------------------------------\u001b[0m\n"],"errorDetails":{"actions":[{"action":"open_url","actionText":"Open Examples","url":"/notebooks/snippets/importing_libraries.ipynb"}]}}],"source":["import streamlit as st\n","import pandas as pd\n","import numpy as np\n","from pickle import load\n","\n","# Load trained model\n","model = load(open('insurancemodelf.pkl', 'rb'))\n","\n","# Title\n","st.title(\"🏥 Insurance Cost Predictor\")\n","st.markdown(\"Enter the details below to estimate medical insurance charges.\")\n","\n","# Input fields\n","age = st.number_input(\"Age\", min_value=0, max_value=120, value=30)\n","sex = st.selectbox(\"Sex\", [\"male\", \"female\"])\n","bmi = st.number_input(\"BMI\", min_value=10.0, max_value=60.0, value=25.0)\n","children = st.number_input(\"Number of Children\", min_value=0, max_value=10, value=0)\n","smoker = st.selectbox(\"Do you smoke?\", [\"yes\", \"no\"])\n","region = st.selectbox(\"Region\", [\"northeast\", \"northwest\", \"southeast\", \"southwest\"])\n","\n","# Predict button\n","if st.button(\"Predict Insurance Cost\"):\n","    # Prepare input\n","    input_data = pd.DataFrame({\n","        'age': [age],\n","        'sex': [sex],\n","        'bmi': [bmi],\n","        'children': [children],\n","        'smoker': [smoker],\n","        'region': [region]\n","    })\n","\n","    # Preprocessing (as per training)\n","    input_data['smoker'] = input_data['smoker'].map({'yes': 1, 'no': 0})\n","    input_data = input_data.drop(['sex', 'region'], axis=1)\n","\n","    # Make prediction\n","    prediction = model.predict(input_data)\n","    st.success(f\"Estimated Insurance Charges: 💲{prediction[0]:,.2f}\")\n"]}]}
+import streamlit as st
+import pandas as pd
+import numpy as np
+from pickle import load
+
+# Load trained model
+@st.cache_resource
+def load_model():
+    return load(open('insurancemodelf.pkl', 'rb'))
+
+model = load_model()
+
+# App layout
+st.set_page_config(page_title="Insurance Cost Predictor", page_icon="🏥")
+
+# Title and description
+st.title("🏥 Insurance Cost Predictor")
+st.markdown("""
+Predict your medical insurance charges based on personal factors.
+Adjust the inputs below and click **Predict** to see the estimate.
+""")
+
+# Sidebar with info
+with st.sidebar:
+    st.header("About")
+    st.markdown("""
+    This app uses machine learning to predict insurance costs based on:
+    - Age
+    - BMI
+    - Number of children
+    - Smoking status
+    """)
+    st.markdown("Model: XGBoost Regressor")
+
+# Input section
+st.header("Personal Information")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    age = st.slider("Age", 18, 100, 30)
+    bmi = st.slider("BMI", 15.0, 50.0, 25.0, step=0.1,
+                   help="Body Mass Index (Normal range: 18.5-24.9)")
+
+with col2:
+    children = st.selectbox("Number of Children", [0, 1, 2, 3, 4, 5])
+    smoker = st.radio("Smoking Status", ["No", "Yes"])
+
+# Hidden fields that were dropped during training (for reference)
+with st.expander("Additional Information (Not used in prediction)"):
+    sex = st.radio("Sex", ["Male", "Female"], disabled=True,
+                  help="This feature was not significant in our model")
+    region = st.selectbox("Region", 
+                         ["Northeast", "Northwest", "Southeast", "Southwest"],
+                         disabled=True,
+                         help="This feature was not significant in our model")
+
+# Prediction button
+if st.button("Predict Insurance Cost", type="primary"):
+    # Prepare input (only using features the model needs)
+    input_data = pd.DataFrame({
+        'age': [age],
+        'bmi': [bmi],
+        'children': [children],
+        'smoker': [1 if smoker == "Yes" else 0]
+    })
+    
+    # Make prediction
+    prediction = model.predict(input_data)
+    
+    # Display results
+    st.balloons()
+    st.success(f"## Estimated Insurance Charges: 💲{prediction[0]:,.2f}")
+    
+    # Add some interpretation
+    if smoker == "Yes":
+        st.warning("Smoking significantly increases insurance costs. Consider quitting to lower your premiums.")
+    if bmi > 30:
+        st.warning("Your BMI indicates obesity, which may affect your insurance rates. Maintaining a healthy weight can help reduce costs.")
+
+# Add footer
+st.markdown("---")
+st.caption("Note: This is a predictive model and actual insurance quotes may vary.")
