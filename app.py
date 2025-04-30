@@ -1,51 +1,30 @@
 import streamlit as st
-import pandas as pd
-from pickle import load
+import numpy as np
+import pickle
 
-# Load the model
-model = load(open('insurancemodelf.pkl', 'rb'))
+# Load the trained model
+model = pickle.load(open("insurance_model.pkl", "rb"))
 
-# Check model's expected feature names
-expected_columns = model.get_booster().feature_names
-print("Expected columns:", expected_columns)
+# Streamlit App Title
+st.title("🏥 Insurance Charges Predictor")
+st.write("Enter your details to predict the estimated insurance charges.")
 
-# Initialize label encoders for categorical columns (same as in training)
-sex_encoder = {'male': 0, 'female': 1}
-smoker_encoder = {'yes': 1, 'no': 0}
-region_encoder = {'northwest': 0, 'northeast': 1, 'southeast': 2, 'southwest': 3}
+# Input fields
+age = st.number_input("Age", min_value=1, max_value=100, value=25)
+sex = st.selectbox("Sex", ("Male", "Female"))
+bmi = st.number_input("BMI", min_value=10.0, max_value=50.0, value=22.0)
+children = st.number_input("Number of Children", min_value=0, max_value=10, value=0)
+smoker = st.selectbox("Smoker", ("No", "Yes"))
+region = st.selectbox("Region", ("Northwest", "Northeast", "Southeast", "Southwest"))
 
-# Set up Streamlit UI
-st.title("Insurance Charges Prediction")
+# Convert categorical inputs to numerical
+sex_val = 0 if sex == "Male" else 1
+smoker_val = 1 if smoker == "Yes" else 0
+region_dict = {"Northwest": 0, "Northeast": 1, "Southeast": 2, "Southwest": 3}
+region_val = region_dict[region]
 
-# User inputs
-age = st.number_input("Age", min_value=0, max_value=120)
-sex = st.selectbox("Sex", ["male", "female"])
-bmi = st.number_input("BMI")
-children = st.number_input("Number of Children", min_value=0, max_value=10)
-smoker = st.selectbox("Smoker", ["yes", "no"])
-region = st.selectbox("Region", ["northwest", "northeast", "southeast", "southwest"])
-
-# Prepare input data for prediction
-if st.button("Predict Insurance Cost"):
-    # Encode categorical values as per model encoding
-    encoded_sex = sex_encoder[sex]
-    encoded_smoker = smoker_encoder[smoker]
-    encoded_region = region_encoder[region]
-
-    # Create a DataFrame to match the expected input structure
-    input_data = pd.DataFrame({
-        'age': [age],
-        'bmi': [bmi],
-        'children': [children],
-        'smoker': [encoded_smoker],
-        'region': [encoded_region]
-    })
-
-    # Ensure the input data columns match the model's expected feature names
-    input_data = input_data[expected_columns]
-
-    # Predict
-    prediction = model.predict(input_data)
-    
-    # Display the result
-    st.success(f"Predicted Insurance Charges: ${prediction[0]:.2f}")
+# Predict button
+if st.button("Predict"):
+    input_data = np.array([[age, sex_val, bmi, children, smoker_val, region_val]])
+    prediction = model.predict(input_data)[0]
+    st.success(f"💵 Estimated Insurance Charges: ${prediction:.2f}")
