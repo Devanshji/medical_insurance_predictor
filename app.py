@@ -5,6 +5,10 @@ from pickle import load
 # Load the model
 model = load(open('insurancemodelf.pkl', 'rb'))
 
+# Check model's expected feature names
+expected_columns = model.get_booster().feature_names
+print("Expected columns:", expected_columns)
+
 # Initialize label encoders for categorical columns (same as in training)
 sex_encoder = {'male': 0, 'female': 1}
 smoker_encoder = {'yes': 1, 'no': 0}
@@ -36,6 +40,9 @@ if st.button("Predict Insurance Cost"):
         'smoker': [encoded_smoker],
         'region': [encoded_region]
     })
+
+    # Ensure the input data columns match the model's expected feature names
+    input_data = input_data[expected_columns]
 
     # Predict
     prediction = model.predict(input_data)
