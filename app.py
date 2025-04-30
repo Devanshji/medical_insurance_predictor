@@ -1,13 +1,17 @@
-import pandas as pd
 import streamlit as st
-import pickle
-from sklearn.preprocessing import LabelEncoder
+import pandas as pd
+from pickle import load
 
-# Load model
-model = pickle.load(open('insurancemodelf.pkl', 'rb'))
+# Load the model
+model = load(open('insurancemodelf.pkl', 'rb'))
 
-# Title
-st.title("Medical Insurance Cost Predictor")
+# Initialize label encoders for categorical columns (same as in training)
+sex_encoder = {'male': 0, 'female': 1}
+smoker_encoder = {'yes': 1, 'no': 0}
+region_encoder = {'northwest': 0, 'northeast': 1, 'southeast': 2, 'southwest': 3}
+
+# Set up Streamlit UI
+st.title("Insurance Charges Prediction")
 
 # User inputs
 age = st.number_input("Age", min_value=0, max_value=120)
@@ -15,35 +19,26 @@ sex = st.selectbox("Sex", ["male", "female"])
 bmi = st.number_input("BMI")
 children = st.number_input("Number of Children", min_value=0, max_value=10)
 smoker = st.selectbox("Smoker", ["yes", "no"])
-region = st.selectbox("Region", ["southeast", "southwest", "northeast", "northwest"])
+region = st.selectbox("Region", ["northwest", "northeast", "southeast", "southwest"])
 
-# Initialize label encoders for categorical columns
-sex_encoder = LabelEncoder()
-smoker_encoder = LabelEncoder()
-region_encoder = LabelEncoder()
-
-# Train the encoder on the unique values that you expect to encounter.
-sex_encoder.fit(["male", "female"])
-smoker_encoder.fit(["yes", "no"])
-region_encoder.fit(["southeast", "southwest", "northeast", "northwest"])
-
-# Prediction logic on button click
+# Prepare input data for prediction
 if st.button("Predict Insurance Cost"):
-    # Encode categorical variables
-    encoded_sex = sex_encoder.transform([sex])[0]
-    encoded_smoker = smoker_encoder.transform([smoker])[0]
-    encoded_region = region_encoder.transform([region])[0]
+    # Encode categorical values as per model encoding
+    encoded_sex = sex_encoder[sex]
+    encoded_smoker = smoker_encoder[smoker]
+    encoded_region = region_encoder[region]
 
-    # Create DataFrame for prediction with encoded variables
-    input_df = pd.DataFrame([{
-        'age': age,
-        'sex': encoded_sex,
-        'bmi': bmi,
-        'children': children,
-        'smoker': encoded_smoker,
-        'region': encoded_region
-    }])
+    # Create a DataFrame to match the expected input structure
+    input_data = pd.DataFrame({
+        'age': [age],
+        'bmi': [bmi],
+        'children': [children],
+        'smoker': [encoded_smoker],
+        'region': [encoded_region]
+    })
 
-    # Make prediction
-    prediction = model.predict(input_df)
-    st.success(f"Predicted Insurance Cost: ${prediction[0]:.2f}")
+    # Predict
+    prediction = model.predict(input_data)
+    
+    # Display the result
+    st.success(f"Predicted Insurance Charges: ${prediction[0]:.2f}")
