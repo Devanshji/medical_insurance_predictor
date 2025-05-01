@@ -1,30 +1,35 @@
 import streamlit as st
-import numpy as np
+import pandas as pd
 import pickle
 
-# Load the trained model
-model = pickle.load(open("insurance_model.pkl", "rb"))
+# Load trained model
+model = pickle.load(open('model1.pkl', 'rb'))
 
-# Streamlit App Title
-st.title("🏥 Insurance Charges Predictor")
-st.write("Enter your details to predict the estimated insurance charges.")
+# App title
+st.title("Insurance Charges Prediction App")
 
-# Input fields
-age = st.number_input("Age", min_value=1, max_value=100, value=25)
-sex = st.selectbox("Sex", ("Male", "Female"))
-bmi = st.number_input("BMI", min_value=10.0, max_value=50.0, value=22.0)
-children = st.number_input("Number of Children", min_value=0, max_value=10, value=0)
-smoker = st.selectbox("Smoker", ("No", "Yes"))
-region = st.selectbox("Region", ("Northwest", "Northeast", "Southeast", "Southwest"))
+# Sidebar inputs
+st.sidebar.header("Enter user input features")
 
-# Convert categorical inputs to numerical
-sex_val = 0 if sex == "Male" else 1
-smoker_val = 1 if smoker == "Yes" else 0
-region_dict = {"Northwest": 0, "Northeast": 1, "Southeast": 2, "Southwest": 3}
-region_val = region_dict[region]
+age = st.sidebar.slider('Age', 18, 100, 30)
+bmi = st.sidebar.slider('BMI', 10.0, 50.0, 25.0)
+children = st.sidebar.slider('Number of Children', 0, 5, 0)
+smoker = st.sidebar.selectbox('Smoker?', ['yes', 'no'])
+sex = st.sidebar.selectbox('Sex', ['male', 'female'])  # not used
+region = st.sidebar.selectbox('Region', ['northeast', 'southeast', 'southwest', 'northwest'])  # not used
 
-# Predict button
-if st.button("Predict"):
-    input_data = np.array([[age, sex_val, bmi, children, smoker_val, region_val]])
-    prediction = model.predict(input_data)[0]
-    st.success(f"💵 Estimated Insurance Charges: ${prediction:.2f}")
+# Convert smoker to 1/0
+smoker_val = 1 if smoker == 'yes' else 0
+
+# Prepare input
+input_df = pd.DataFrame({
+    'age': [age],
+    'bmi': [bmi],
+    'children': [children],
+    'smoker': [smoker_val]
+})
+
+# Prediction
+if st.button('Predict Charges'):
+    prediction = model.predict(input_df)[0]
+    st.success(f'Estimated Insurance Charges: ${prediction:.2f}')
